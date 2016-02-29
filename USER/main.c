@@ -34,7 +34,9 @@ int main( void )
 	{
 		delay_ms( 200 );
 	}
-
+	
+	sendUartStartSuccessfull();
+	
 	while ( 1 )
 	{
 		RespondToPacket();

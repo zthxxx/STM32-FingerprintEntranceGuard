@@ -91,6 +91,16 @@ void sendUartTimeData(void)
 }
 
 
+void sendUartStartSuccessfull(void)
+{
+	uint8_t *userSendData;
+	uint16_t userSendDataLength = 0;
+	userSendData = (uint8_t *)calloc(userSendDataLength, sizeof(uint8_t));
+	sendOnePacket(0x00,userSendDataLength,0x00,userSendData);		
+	free(userSendData);
+}
+
+
 void sendUartOKData(void)
 {
 	uint8_t *userSendData;

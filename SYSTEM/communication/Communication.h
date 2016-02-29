@@ -21,6 +21,7 @@ void sendUartTimeData(void);
 void sendOnePacket(uint8_t packetSignByte,uint16_t userSendDataLength,uint8_t responseCommandByte,uint8_t *userSendData);
 void sendUartForResend(void);
 void sendUartOKData(void);
+void sendUartStartSuccessfull(void);
 void sendPacketFIFO(uint16_t packetAllDataSumLength);
 void sendUartOKTimeCheck(void);
 void sendUartOKClearAll(void);
