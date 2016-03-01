@@ -44,9 +44,7 @@ u8 USART_RX_BUF[USART_REC_LEN];     //接收缓冲,最大USART_REC_LEN个字节.
 //bit13~0，	接收到的有效字节数目
 u16 USART_RX_STA=0;       //接收状态标记	  
 
-extern void RespondToPacket(void);
-extern uint8_t Protocol_packetStratData[2];
-extern uint8_t Protocol_addressData[4];
+
 
 uint8_t receiveCountSign=0;//接受到第几位
 uint8_t isThePacketStart = 0;//是否有包
@@ -58,8 +56,8 @@ uint8_t packetResponseCommandData = 0;//响应指令
 uint8_t packetUserReceiveData[50] = {0};//用户发送有效数据
 uint16_t packetCheckSumData = 0;//校验和
 uint8_t isDisableCheckSum = 1;//1为关闭校验和	
-
-
+uint8_t readRequestFlag = 0;
+uint8_t sendLocalAddressFlag = 0;
 //初始化IO 串口1 
 //bound:波特率
 void uart_init(u32 bound){
@@ -179,7 +177,7 @@ void USART2_IRQHandler(void)                	//串口中断服务程序
 		receiveUSART2Packet(receiveByte);//解析接受的数据
 	}
 
-			GPIO_ResetBits(GPIOA,GPIO_Pin_8);
+	//GPIO_ResetBits(GPIOA,GPIO_Pin_8); //LED off
 } 
 
 uint8_t checkPacketCheckSumData()
@@ -258,12 +256,24 @@ void receiveUSART2Packet(uint8_t receiveByte)
 		{
 			receiveCountSign = 2;
 		}
-		else if((receiveCountSign >= 2 && receiveCountSign <= 5)&&(receiveByte == Protocol_addressData[receiveCountSign-2]))//0xFF 0xFF 0xFF 0xFF 
+		else if((receiveCountSign >= 2 && receiveCountSign <= 5)&&(receiveByte == Protocol_addressData[receiveCountSign-2]) && (readRequestFlag == 0))//0xFF 0xFF 0xFF 0xFF 
 		{
 			receiveCountSign++;
 			if(receiveCountSign >= 6) 
 				isThePacketStart = 1;
 		}
+		else if((receiveCountSign >= 2 && receiveCountSign <= 5)&&(receiveByte == Protocol_addressReadRequestData[receiveCountSign-2]))
+		{
+			receiveCountSign++;
+			readRequestFlag = 1;
+			if(receiveCountSign >= 6) 
+			{
+				readRequestFlag = 0;
+				receiveCountSign = 0;
+				sendLocalAddressFlag = 1;
+			}
+			
+		}		
 		else 
 		{
 			isThePacketEnd=0;

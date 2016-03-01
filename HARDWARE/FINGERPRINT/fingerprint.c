@@ -408,13 +408,5 @@ unsigned char enroll(void) //采集两次指纹，生成1个 指纹模板
    	}
 }
 
-void numshow(unsigned int num)
-{
-	unsigned char str[5] = {0};
-	str[0] = num/1000 + 0x30;
-	str[1] = num%1000/100 + 0x30;
-	str[2] = num%100/10 + 0x30;
-	str[3] = num%10 + 0x30;
-	str[4] = '\0';
-}
+
 

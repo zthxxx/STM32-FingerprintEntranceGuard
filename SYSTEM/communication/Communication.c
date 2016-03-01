@@ -8,7 +8,8 @@
 uint8_t *communicatFIFO;
 
 uint8_t Protocol_packetStratData[2] = {0xEF,0x02};
-uint8_t Protocol_addressData[4] = {0xFF,0xFF,0xFF,0xFF};
+uint8_t Protocol_addressData[4] = {0xFF,0xFF,0xEE,0xEF};
+uint8_t Protocol_addressReadRequestData[4] = {0xFF,0xEE,0xDD,0xCC};
 uint8_t Protocol_packetSignByte = 0x01;
 uint8_t Protocol_packetFollowLengthData[2] = {0x00,0x06};
 uint16_t Protocol_packetFollowLength;
@@ -91,7 +92,7 @@ void sendUartTimeData(void)
 }
 
 
-void sendUartStartSuccessfull(void)
+void sendUartLocatAddress(void)
 {
 	uint8_t *userSendData;
 	uint16_t userSendDataLength = 0;

@@ -31,6 +31,10 @@
 extern u8  USART_RX_BUF[USART_REC_LEN]; //接收缓冲,最大USART_REC_LEN个字节.末字节为换行符 
 extern u16 USART_RX_STA;         		//接收状态标记	
 
+extern void RespondToPacket(void);
+extern uint8_t Protocol_packetStratData[2];
+extern uint8_t Protocol_addressData[4];
+extern uint8_t Protocol_addressReadRequestData[4];
 extern uint8_t receiveCountSign;//接受到第几位
 extern uint8_t isThePacketStart;//是否有包
 extern uint8_t isThePacketEnd;//是否包结束
@@ -46,7 +50,6 @@ extern uint8_t isDisableCheckSum;//1为关闭校验和
 void uart_init(u32 bound);
 void uart2_init(u32 bound);
 void sendUart2OneByte(uint8_t byteData);
-
 uint8_t checkPacketCheckSumData(void);
 void receiveUSART2Packet(uint8_t receiveByte);
 #endif

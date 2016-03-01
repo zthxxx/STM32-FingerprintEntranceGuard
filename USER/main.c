@@ -10,7 +10,7 @@
 #include "fingerprint.h"
 #include "Communication.h"
 #include "ds1302.h"
-
+extern uint8_t sendLocalAddressFlag;
 
 /*
  * ALIENTEK Mini STM32开发板范例代码11
@@ -35,7 +35,7 @@ int main( void )
 		delay_ms( 200 );
 	}
 	
-	sendUartStartSuccessfull();
+	sendUartLocatAddress();
 	
 	while ( 1 )
 	{
@@ -49,7 +49,6 @@ int main( void )
 					if ( savefingure( SaveNumber ? SaveNumber : ++SaveNumber ) == 1 )       /* 保存也成功 */
 					{
 						delay_ms( 100 );
-						numshow( SaveNumber );
 						addNewUserID = SaveNumber;
 						if(IsAppointUserID == 1)
 						{
@@ -67,7 +66,6 @@ int main( void )
 				else  
 				{
 					delay_ms( 100 );
-					numshow( 0 );
 				}
 			}
 		}
@@ -79,7 +77,6 @@ int main( void )
 
 			if ( searchnum >= 1 && searchnum <= 1000 )
 			{
-				numshow( searchnum );   /* 显示搜索到的指纹 */
 				if ( searchnum == addNewUserID )
 				{
 					addNewUserID = 0;
@@ -93,9 +90,9 @@ int main( void )
 			if ( searchnum == 0xFFFF )      /* 识别指纹失败 */
 			{
 				/* 蜂鸣器响3声 */
-				numshow( 0 );
 			}
 		}
+		
 		if ( modeflag == 3 )                    /* 为删除指纹模式 */
 		{
 			if ( delfingure( DelNumber ) == 1 )
@@ -103,6 +100,12 @@ int main( void )
 				sendUartOKDelOneUser();
 			}
 			modeflag = 0;
+		}
+		
+		if(sendLocalAddressFlag == 1)
+		{
+			sendUartLocatAddress();
+			sendLocalAddressFlag = 0;
 		}
 
 		if ( clearallflag == 1 )
@@ -113,13 +116,13 @@ int main( void )
 			modeflag = 0;
 			sendUartOKClearAll();
 			SaveNumber = 0;
-			numshow( 0 );
 		}
 
 		if ( changeflag == 1 )
 		{
 			changeflag = 0;
 		}
+		
 	}
 }
 

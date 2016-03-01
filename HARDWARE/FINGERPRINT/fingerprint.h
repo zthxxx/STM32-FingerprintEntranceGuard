@@ -17,7 +17,7 @@ unsigned int search(void);//搜索指纹
 unsigned char savefingure(unsigned int ID);//保存指纹
 unsigned char enroll(void); //采集两次指纹，生成1个 指纹模板
 unsigned char delfingure(unsigned int ID);//保存指纹
-void numshow(unsigned int num);
+
 
 extern unsigned int 	SaveNumber; //每录入一次SaveNumber++
 extern unsigned int 	IsAppointUserID;
