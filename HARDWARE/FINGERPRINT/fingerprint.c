@@ -1,8 +1,4 @@
 #include"fingerprint.h"
-
-#include "sys.h"   //与STM32相关的一些定义
-#include "usart.h" //指纹模块 需要串口驱动的支持
-
 #include "delay.h"
 
 unsigned int 	SaveNumber=0; //每录入一次SaveNumber++
@@ -14,6 +10,15 @@ unsigned int 	clk0=0;
 
 unsigned char changeflag=0,modeflag=0,clearallflag=0;  
 //默认为识别模式，如果为1为录入指纹模式
+
+unsigned char fingerprintSearchMode = 0;
+unsigned char fingerprintAddInOrderMode = 1;
+unsigned char fingerprintAddAppointMode = 2;
+unsigned char fingerprintDelAppointMode = 3;
+unsigned char fingerprintClearAllMode = 4;
+unsigned char fingerprintReadAddressMode = 5;
+
+
 
 #define MAX_NUMBER    80 
 
@@ -260,23 +265,23 @@ unsigned int Searchfinger(void)//搜索指纹(发送搜索命令、以及根据返回值确定是否存
 unsigned int search(void)//搜索指纹 
 {
  	unsigned char SearchBuf=0,i=0;
-  	while (i<5)
-    {
-			if (ImgProcess(1)==1)//首先读入一次指纹  
-			{
-				SearchBuf = Searchfinger();//进行指纹比对，如果搜索到，返回搜索到的指纹序号
-				if(SearchBuf==1)
-				{
-					return SearchNumber; 
-				}
-				else 
-				{
-					return 0xFFFF;//表示搜索到的指纹不正确
-				}     
-			}
-		i++;	
-    }
-   return 0;
+//  	while (i < 3)  //i越大  可能读入图像次数越多，速度越慢，指令反应越慢
+//    {
+        if (ImgProcess(1)==1)//首先读入一次指纹  
+        {
+            SearchBuf = Searchfinger();//进行指纹比对，如果搜索到，返回搜索到的指纹序号
+            if(SearchBuf==1)
+            {
+                return SearchNumber; 
+            }
+            else 
+            {
+                return 0xFFFF;//表示搜索到的指纹不正确
+            }     
+        }
+//        i++;
+//    }
+    return 0;
 }
 
 unsigned char savefingure(unsigned int ID)//保存指纹
@@ -355,7 +360,7 @@ unsigned char enroll(void) //采集两次指纹，生成1个 指纹模板
         	//采集第一个特征成功 
 		   	count=0;  
 		 
-			delay_ms(100);
+			delay_ms(200);
 	 
 			break;
        	}
@@ -380,13 +385,6 @@ unsigned char enroll(void) //采集两次指纹，生成1个 指纹模板
       	{
         	if( (Command(MERG,40)==1) && (FifoNumber==11) && (FIFO[9]==0x00)  ) //合并成功返回1
 			{
-//			     BEEP=1;
-//	             delay_ms(100);
-//	             BEEP=0;
-//				 delay_ms(100);
-//				 BEEP=1;
-//	             delay_ms(100);	//响两声，表示生成一个模板成功
-//	             BEEP=0;
 				 return(1);
 			}
 			else
@@ -410,3 +408,57 @@ unsigned char enroll(void) //采集两次指纹，生成1个 指纹模板
 
 
 
+ 
+unsigned int enteringFingerprint(SendUartIDNum sendUartAddNewAppointUserIDSub,SendUartIDNum sendUartAddNewUserIDSub)   /* 为录入指纹模式 */
+{
+    uint16_t lastAppendNewUserID = 0;
+    if(SaveNumber < 1000)                                                                /*  */
+    {
+        if(enroll() == 1)                                                           /* 采集两次，生成1个指纹模板成功 */
+        {
+            if(savefingure(SaveNumber ? SaveNumber : ++SaveNumber)== 1)      /* 保存也成功 */
+            {
+                delay_ms(100);
+                
+                if(IsAppointUserID == 1)
+                {
+                    IsAppointUserID = 0;
+                    sendUartAddNewAppointUserIDSub(SaveNumber);
+                }
+                else
+                {
+                    sendUartAddNewUserIDSub(SaveNumber);
+                }
+                lastAppendNewUserID = SaveNumber;
+                SaveNumber++;                                                   /* 加一次 */
+            }
+        }
+    }
+    return lastAppendNewUserID;
+}
+ 
+void searchFingerprint(unsigned int lastAppendNewUserID, SendUartIDNum sendUartUserIDSub)         /* 为识别模式 */
+{
+    searchnum = search();
+    if((searchnum == 0) || (searchnum == 0xFFFF))     /* 识别指纹失败 */
+    {
+        return;
+    }
+    if(searchnum >= 1 && searchnum <= 1000)
+    {
+        if(searchnum == lastAppendNewUserID)
+        {
+            lastAppendNewUserID = 0;
+        }
+        else  
+        {
+            sendUartUserIDSub(searchnum);
+        }
+    }
+
+}
+
+void setReadAddressMode(void)
+{
+    modeflag = fingerprintReadAddressMode;
+}

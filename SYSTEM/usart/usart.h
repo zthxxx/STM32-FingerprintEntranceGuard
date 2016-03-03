@@ -2,6 +2,7 @@
 #define __USART_H
 #include "stdio.h"	
 #include "sys.h" 
+//#include "fingerprint.h"
 //////////////////////////////////////////////////////////////////////////////////	 
 //本程序只供学习使用，未经作者许可，不得用于其它任何用途
 //Mini STM32开发板
@@ -45,10 +46,13 @@ extern uint8_t packetResponseCommandData;//响应指令
 extern uint8_t packetUserReceiveData[50];//用户发送有效数据
 extern uint16_t packetCheckSumData;//校验和
 extern uint8_t isDisableCheckSum;//1为关闭校验和	
+typedef void (*RequestLocalAddress)(void);
+
+
 
 //如果想串口中断接收，请不要注释以下宏定义
 void uart_init(u32 bound);
-void uart2_init(u32 bound);
+void uart2_init(u32 bound, RequestLocalAddress);
 void sendUart2OneByte(uint8_t byteData);
 uint8_t checkPacketCheckSumData(void);
 void receiveUSART2Packet(uint8_t receiveByte);

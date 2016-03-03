@@ -57,7 +57,9 @@ uint8_t packetUserReceiveData[50] = {0};//用户发送有效数据
 uint16_t packetCheckSumData = 0;//校验和
 uint8_t isDisableCheckSum = 1;//1为关闭校验和	
 uint8_t readRequestFlag = 0;
-uint8_t sendLocalAddressFlag = 0;
+RequestLocalAddress requestLocalAddress;
+
+
 //初始化IO 串口1 
 //bound:波特率
 void uart_init(u32 bound){
@@ -101,14 +103,17 @@ void uart_init(u32 bound){
     USART_Cmd(USART1, ENABLE);                    //使能串口 
 
 }
-void uart2_init(u32 bound)
+void uart2_init(u32 bound, RequestLocalAddress setReadAddressMode)
 {
+    
     //GPIO端口设置,结构体申明
 	GPIO_InitTypeDef GPIO_InitStructure;
 	USART_InitTypeDef USART_InitStructure;
 	USART_ClockInitTypeDef USART_ClockInitStruct;
 	NVIC_InitTypeDef NVIC_InitStructure;
 
+    requestLocalAddress = setReadAddressMode;
+    
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA, ENABLE);
 	RCC_APB1PeriphClockCmd(RCC_APB1Periph_USART2 , ENABLE); 	//使能USART1，GPIOA时钟
 
@@ -270,9 +275,8 @@ void receiveUSART2Packet(uint8_t receiveByte)
 			{
 				readRequestFlag = 0;
 				receiveCountSign = 0;
-				sendLocalAddressFlag = 1;
+                requestLocalAddress();
 			}
-			
 		}		
 		else 
 		{

@@ -5,10 +5,12 @@
 
 
 #define FIFO_MAX_NUMBER    80
+
+
 uint8_t *communicatFIFO;
 
 uint8_t Protocol_packetStratData[2] = {0xEF,0x02};
-uint8_t Protocol_addressData[4] = {0xFF,0xFF,0xEE,0xEF};
+uint8_t Protocol_addressData[4] = {0xFF,0xFF,0xCC,0x01};
 uint8_t Protocol_addressReadRequestData[4] = {0xFF,0xEE,0xDD,0xCC};
 uint8_t Protocol_packetSignByte = 0x01;
 uint8_t Protocol_packetFollowLengthData[2] = {0x00,0x06};
@@ -16,10 +18,7 @@ uint16_t Protocol_packetFollowLength;
 uint8_t Protocol_responseCommandByte = 0x00;
 uint8_t Protocol_checkSumDataHex[2] = {0x00,0xFF};
 uint16_t Protocol_packetAllDataSumLength = 0;
-
-uint16_t addNewUserID = 0;
 uint8_t userIDPerfixByte = 0xAB;
-
 
 
 void sendUartUserID(uint16_t UserIDNum)
@@ -210,11 +209,11 @@ void RespondToPacket()
 					sendUartOKData();
 				break;
 				case 0x01://当前用户
-					modeflag = 0;//进入查找模式					
+					modeflag = fingerprintSearchMode;//进入查找模式					
 				break;
 				case 0x02://新增用户
 					if(packetResponseCommandData == 0x00)
-						modeflag = 1;//新增一个用户					
+						modeflag = fingerprintAddInOrderMode;//新增一个用户					
 				break;
 				case 0x06://新增指定用户
 					//sendUartOKData();
@@ -223,7 +222,7 @@ void RespondToPacket()
 						SaveNumber = packetUserReceiveData[1];
 						SaveNumber <<= 8 ;
 						SaveNumber += packetUserReceiveData[2];
-						modeflag = 1;//新增一个用户		
+						modeflag = fingerprintAddAppointMode;//新增一个用户		
 						IsAppointUserID = 1;
 					}
 					else
@@ -241,7 +240,7 @@ void RespondToPacket()
 						DelNumber = packetUserReceiveData[1];
 						DelNumber <<= 8 ;
 						DelNumber += packetUserReceiveData[2];
-						modeflag = 3;
+						modeflag = fingerprintDelAppointMode;
 					}
 					else
 					{
@@ -249,7 +248,7 @@ void RespondToPacket()
 					}					
 				break;
 				case 0x10://全部清空
-					clearallflag = 1;//清空全部用户
+					modeflag = fingerprintClearAllMode;//清空全部用户
 				break;
 				case 0x13://重新发包
 					sendPacketFIFO(Protocol_packetAllDataSumLength);

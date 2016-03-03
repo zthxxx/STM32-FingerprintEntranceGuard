@@ -17,7 +17,7 @@ void DS1302_Configuration(void)
 
 static void DelayNOP(u32 count)
 {
-	while(count--) NOP();
+	while(count--) __ASM ("nop");
 }
 
 static void DS1302_OUT(void)
@@ -45,7 +45,7 @@ void DS1302SendByte(u8 byte)
 		DS1302_CLK_H();
 		DelayNOP(50);		//加延时
 		DS1302_CLK_L();
-		NOP();NOP();		//加延时
+		__ASM ("nop");__ASM ("nop");		//加延时
 	}
 }
 u8 DS1302ReceiveByte(void)
@@ -58,7 +58,7 @@ u8 DS1302ReceiveByte(void)
 		DS1302_CLK_L();
 		DelayNOP(50);		//加延时
 		DS1302_CLK_H();
-		NOP();NOP();		//加延时
+		__ASM ("nop");__ASM ("nop");		//加延时
 	}
 	return(byte>>1);
 }

@@ -1,16 +1,10 @@
 #ifndef __COMMUNICATION_H
-#define __COMMUNICATION_H	 
+#define __COMMUNICATION_H
 
 #include "sys.h"   //与STM32相关的一些定义
 #include "usart.h" //指纹模块 需要串口驱动的支持
 #include "fingerprint.h"
 #include "ds1302.h"
-
-
-
-
-extern uint16_t addNewUserID;
-
 
 
 
