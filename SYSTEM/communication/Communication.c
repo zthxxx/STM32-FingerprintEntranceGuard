@@ -216,7 +216,6 @@ void RespondToPacket()
 						modeflag = fingerprintAddInOrderMode;//新增一个用户					
 				break;
 				case 0x06://新增指定用户
-					//sendUartOKData();
 					if(packetUserReceiveData[0] == userIDPerfixByte)
 					{		
 						SaveNumber = packetUserReceiveData[1];

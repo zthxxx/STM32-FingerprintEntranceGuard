@@ -31,10 +31,6 @@ int main(void)
 	
 	sendUartLocatAddress();     //开机时先推送一次地址
 	
-//    while(1)
-//    {
-//        searchFingerprint(lastAppendNewUserID, sendUartUserID);
-//    }
     
 	while(1)
 	{
@@ -62,9 +58,11 @@ int main(void)
             }
             case 4:                     //清空指纹模式
             {
-                Clear_All();
-                SaveNumber = 0;
-                sendUartOKClearAll();
+                if(Clear_All() == 1)
+                {
+                    SaveNumber = 0;
+                    sendUartOKClearAll();
+                }
                 break;
             }
             default:

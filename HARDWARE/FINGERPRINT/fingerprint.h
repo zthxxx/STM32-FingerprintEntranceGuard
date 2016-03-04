@@ -12,7 +12,7 @@ void delay1ms(unsigned int t);
 void TxdByte(unsigned int ch);//串口发送信息,通过查询方式发送一个字符
 unsigned char Command(unsigned char *p,unsigned char MaxTime); //命令解析,给模块发送一个命令
 unsigned char VefPSW(void);//验证设备握手口令,成功返回1     
-void Clear_All(void); //清空指纹库   
+unsigned char Clear_All(void); //清空指纹库   
 unsigned char ImgProcess(unsigned char BUFID);  //发获取图像并生成特征文件，存入BUFID中//输入参数为缓冲区号  
 unsigned int Searchfinger(void);//搜索指纹(发送搜索命令、以及根据返回值确定是否存在)        
 unsigned int search(void);//搜索指纹 

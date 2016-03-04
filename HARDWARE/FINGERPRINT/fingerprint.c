@@ -207,10 +207,18 @@ unsigned char VefPSW(void)//验证设备握手口令,成功返回1
 }
 
 
-void Clear_All(void) //清空指纹库   
+unsigned char Clear_All(void) //清空指纹库   
 {				
       delay_ms(200);
-	  Command(DELE_all,50); //清空指纹库  		
+	  if(Command(DELE_all,50)) //清空指纹库  		
+      {
+          return 1;
+      }
+      else
+      {
+          return 0;
+      }
+          
 }
 
 unsigned char ImgProcess(unsigned char BUFID)  //发获取图像并生成特征文件，存入BUFID中//输入参数为缓冲区号  
@@ -264,7 +272,8 @@ unsigned int Searchfinger(void)//搜索指纹(发送搜索命令、以及根据返回值确定是否存
 
 unsigned int search(void)//搜索指纹 
 {
- 	unsigned char SearchBuf=0,i=0;
+ 	unsigned char SearchBuf=0;
+//    unsigned char i=0;
 //  	while (i < 3)  //i越大  可能读入图像次数越多，速度越慢，指令反应越慢
 //    {
         if (ImgProcess(1)==1)//首先读入一次指纹  
