@@ -5,8 +5,12 @@
 #include "usart.h" //指纹模块 需要串口驱动的支持
 #include "fingerprint.h"
 #include "ds1302.h"
+#include "dma.h"
 
+#define UART2_SEND_TEXT_LENTH 500
 
+extern uint8_t UART2_DMA_SendBuff[UART2_SEND_TEXT_LENTH];
+extern uint8_t *communicatFIFO;
 
 void sendUartUserID(uint16_t UserIDNum);
 void sendUartAddNewUserID(uint16_t UserIDNum);
@@ -21,4 +25,9 @@ void sendUartOKTimeCheck(void);
 void sendUartOKClearAll(void);
 void RespondToPacket(void);
 void sendUartOKDelOneUser(void);
+uint8_t checkPacketCheckSumData(void);
+void receiveUSART2Packet(uint8_t receiveByte);
+typedef void (*RequestLocalAddress)(void);
+
+
 #endif

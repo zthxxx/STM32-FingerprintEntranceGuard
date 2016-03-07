@@ -7,9 +7,7 @@
 #include "fingerprint.h"
 #include "Communication.h"
 #include "ds1302.h"
-
-
-
+#include "dma.h"
 
 
 int main(void)
@@ -19,8 +17,9 @@ int main(void)
 	delay_init();                   /* 延时函数初始化 */
 	NVIC_Configuration();           /* 设置NVIC中断分组2:2位抢占优先级，2位响应优先级 */
 	uart_init(9600);              /* 串口初始化为9600 */
-	uart2_init(115200, setReadAddressMode);           /* 串口2初始化为115200 */
+	uart2_init(115200, receiveUSART2Packet);           /* 串口2初始化为115200 */
 	InitClock();                    //DS1302 clock init
+    MYDMA_Config(DMA1_Channel7,(u32)&USART2->DR,(u32)UART2_DMA_SendBuff,UART2_SEND_TEXT_LENTH);//DMA1通道4,外设为串口1,存储器为SendBuff,长(TEXT_LENTH+2)*100.
 	TIM3_Int_Init(200, 7199);     /* 10Khz的计数频率，计数到200为20ms */
 
 
@@ -39,7 +38,7 @@ int main(void)
         {
             case 0:                      /* 为识别模式 */
             {
-                searchFingerprint(lastAppendNewUserID, sendUartUserID);
+                searchFingerprint(&lastAppendNewUserID, sendUartUserID);
                 break;
             }
             case 1:                     /* 为顺序录入指纹模式 */

@@ -46,16 +46,16 @@ extern uint8_t packetResponseCommandData;//响应指令
 extern uint8_t packetUserReceiveData[50];//用户发送有效数据
 extern uint16_t packetCheckSumData;//校验和
 extern uint8_t isDisableCheckSum;//1为关闭校验和	
-typedef void (*RequestLocalAddress)(void);
+typedef void (*ReceiveUSART2PacketDelegate)(uint8_t);
 
 
 
 //如果想串口中断接收，请不要注释以下宏定义
 void uart_init(u32 bound);
-void uart2_init(u32 bound, RequestLocalAddress);
+void uart2_init(u32 bound, ReceiveUSART2PacketDelegate);
+void sendUart1OneByte(uint8_t byteData);
 void sendUart2OneByte(uint8_t byteData);
-uint8_t checkPacketCheckSumData(void);
-void receiveUSART2Packet(uint8_t receiveByte);
+
 #endif
 
 

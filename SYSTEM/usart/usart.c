@@ -46,18 +46,8 @@ u16 USART_RX_STA=0;       //接收状态标记
 
 
 
-uint8_t receiveCountSign=0;//接受到第几位
-uint8_t isThePacketStart = 0;//是否有包
-uint8_t isThePacketEnd = 0;//是否包结束
-uint8_t packetSignDataByte = 0;//包标识
-uint16_t packetFollowLengthData = 0;//后续长度
-uint16_t packetUserSendDataLength = 0;//用户数据长度 = 后续长度 - 3
-uint8_t packetResponseCommandData = 0;//响应指令
-uint8_t packetUserReceiveData[50] = {0};//用户发送有效数据
-uint16_t packetCheckSumData = 0;//校验和
-uint8_t isDisableCheckSum = 1;//1为关闭校验和	
-uint8_t readRequestFlag = 0;
-RequestLocalAddress requestLocalAddress;
+
+ReceiveUSART2PacketDelegate analyzeClientUARTPacket;//返回地址时的调用函数
 
 
 //初始化IO 串口1 
@@ -103,7 +93,7 @@ void uart_init(u32 bound){
     USART_Cmd(USART1, ENABLE);                    //使能串口 
 
 }
-void uart2_init(u32 bound, RequestLocalAddress setReadAddressMode)
+void uart2_init(u32 bound, ReceiveUSART2PacketDelegate analyzeClientUARTPacketFun)
 {
     
     //GPIO端口设置,结构体申明
@@ -112,7 +102,7 @@ void uart2_init(u32 bound, RequestLocalAddress setReadAddressMode)
 	USART_ClockInitTypeDef USART_ClockInitStruct;
 	NVIC_InitTypeDef NVIC_InitStructure;
 
-    requestLocalAddress = setReadAddressMode;
+    analyzeClientUARTPacket = analyzeClientUARTPacketFun;
     
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA, ENABLE);
 	RCC_APB1PeriphClockCmd(RCC_APB1Periph_USART2 , ENABLE); 	//使能USART1，GPIOA时钟
@@ -159,6 +149,13 @@ void uart2_init(u32 bound, RequestLocalAddress setReadAddressMode)
 
 }
 
+void sendUart1OneByte(uint8_t byteData)//串口发送信息,通过查询方式发送一个字符
+{
+    USART_ClearFlag(USART1,USART_FLAG_TC);//先清除一下发送中断标志位，会解决第一个字节丢失的问题。
+	USART_SendData(USART1, byteData);
+	while(USART_GetFlagStatus(USART1,USART_FLAG_TC)!=SET);//等待发送结束
+}
+
 void sendUart2OneByte(uint8_t byteData)
 {
 	USART_ClearFlag(USART2,USART_FLAG_TC);//先清除一下发送中断标志位，会解决第一个字节丢失的问题。
@@ -179,112 +176,10 @@ void USART2_IRQHandler(void)                	//串口中断服务程序
 	{
 		RespondToPacket();//先判断上一包是否响应
 		receiveByte = USART_ReceiveData(USART2);//(USART1->DR);		//读取接收到的数据			
-		receiveUSART2Packet(receiveByte);//解析接受的数据
+		analyzeClientUARTPacket(receiveByte);//解析接受的数据
 	}
-
-	//GPIO_ResetBits(GPIOA,GPIO_Pin_8); //LED off
 } 
 
-uint8_t checkPacketCheckSumData()
-{
-	uint16_t thePacketCheckSum=0;
-	uint16_t count=0;
-	uint8_t isPacketSumRigth = 0;
-	thePacketCheckSum = packetSignDataByte + packetFollowLengthData + packetResponseCommandData;
-	for(count=0;count<packetUserSendDataLength;count++)
-	{
-		thePacketCheckSum += packetUserReceiveData[count];
-	}
-	
-	if(thePacketCheckSum == packetCheckSumData)
-	{
-		isPacketSumRigth = 1;
-	}
-	
-	return isPacketSumRigth;
-}
-
-
-void receiveUSART2Packet(uint8_t receiveByte)
-{
-	if(isThePacketStart)
-	{
-		if(receiveCountSign == 6)//&& receiveByte != 0xFF
-		{
-			packetSignDataByte = receiveByte;
-			receiveCountSign = 7;
-		}
-		else if(receiveCountSign == 7)
-		{
-			packetFollowLengthData = receiveByte & 0x00FF;
-			packetFollowLengthData <<= 8;
-			receiveCountSign = 8;
-		}
-		else if(receiveCountSign == 8)
-		{
-			packetFollowLengthData |= receiveByte & 0x00FF;
-			packetUserSendDataLength = packetFollowLengthData - 3;
-			receiveCountSign = 9;
-		}
-		else if(receiveCountSign == 9)
-		{
-			packetResponseCommandData = receiveByte;
-			receiveCountSign = 10;
-		}
-		else if((receiveCountSign >= 10) && (receiveCountSign < 10 + packetUserSendDataLength))
-		{
-			receiveCountSign++;			
-			packetUserReceiveData[receiveCountSign-11] = receiveByte;				
-		}
-		else if(receiveCountSign == 10 + packetUserSendDataLength)
-		{
-			packetCheckSumData = receiveByte & 0x00FF;
-			packetCheckSumData <<= 8;
-			receiveCountSign++;
-		}
-		else if(receiveCountSign == 11 + packetUserSendDataLength)
-		{
-			packetCheckSumData |= receiveByte & 0x00FF;
-			receiveCountSign++;
-			isThePacketEnd = 1;
-			isThePacketStart = 0;
-			receiveCountSign = 0;
-		}
-	}
-	else
-	{
-		if((receiveCountSign == 0)&&(receiveByte == Protocol_packetStratData[0]))//0xEF  
-		{
-			receiveCountSign = 1;
-		}
-		else if((receiveCountSign == 1)&&(receiveByte == Protocol_packetStratData[1]))//0x02
-		{
-			receiveCountSign = 2;
-		}
-		else if((receiveCountSign >= 2 && receiveCountSign <= 5)&&(receiveByte == Protocol_addressData[receiveCountSign-2]) && (readRequestFlag == 0))//0xFF 0xFF 0xFF 0xFF 
-		{
-			receiveCountSign++;
-			if(receiveCountSign >= 6) 
-				isThePacketStart = 1;
-		}
-		else if((receiveCountSign >= 2 && receiveCountSign <= 5)&&(receiveByte == Protocol_addressReadRequestData[receiveCountSign-2]))
-		{
-			receiveCountSign++;
-			readRequestFlag = 1;
-			if(receiveCountSign >= 6) 
-			{
-				readRequestFlag = 0;
-				receiveCountSign = 0;
-                requestLocalAddress();
-			}
-		}		
-		else 
-		{
-			isThePacketEnd=0;
-			receiveCountSign = 0;
-		}
-	}
-}
 
 #endif	
 

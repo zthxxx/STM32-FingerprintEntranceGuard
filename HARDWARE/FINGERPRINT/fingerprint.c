@@ -193,6 +193,12 @@ unsigned char Command(unsigned char *p,unsigned char MaxTime) //ÃüÁî½âÎö,¸øÄ£¿é·
    return (result);
 }
 
+
+void ReadFingerData()
+{
+    
+}
+
 unsigned char VefPSW(void)//ÑéÖ¤Éè±¸ÎÕÊÖ¿ÚÁî,³É¹¦·µ»Ø1     
 {
  	unsigned char  count=0;
@@ -319,7 +325,7 @@ unsigned char savefingure(unsigned int ID)//±£´æÖ¸ÎÆ
 	 FIFO[14]=sum/256;	//Ğ£ÑéºÍ
      FIFO[15]=sum%256;	//Ğ£ÑéºÍ
 
-     if (Command(FIFO,70)==1)//´Ë´¦½øĞĞ´æ·ÅÖ¸ÎÆÄ£°åµÄÃüÁî
+     if (Command(FIFO,70)==1 && FIFO[9]==0x00)//´Ë´¦½øĞĞ´æ·ÅÖ¸ÎÆÄ£°åµÄÃüÁî
 	 {
 	   return(1);
 	 }
@@ -329,7 +335,7 @@ unsigned char savefingure(unsigned int ID)//±£´æÖ¸ÎÆ
 	 } 
 }
 
-unsigned char delfingure(unsigned int ID)//±£´æÖ¸ÎÆ
+unsigned char delfingure(unsigned int ID)//É¾³ıÖ¸ÎÆ
 {
 	 unsigned char i=0;
 	 unsigned int sum = 0;
@@ -351,7 +357,7 @@ unsigned char delfingure(unsigned int ID)//±£´æÖ¸ÎÆ
 	 FIFO[15]=sum/256;	//Ğ£ÑéºÍ
      FIFO[16]=sum%256;	//Ğ£ÑéºÍ
 
-     if (Command(FIFO,80)==1)//´Ë´¦½øĞĞ´æ·ÅÖ¸ÎÆÄ£°åµÄÃüÁî
+     if (Command(FIFO,80)==1 && FIFO[9]==0x00)//´Ë´¦½øĞĞ´æ·ÅÖ¸ÎÆÄ£°åµÄÃüÁî
 	 {
 	   return(1);
 	 }
@@ -450,7 +456,7 @@ unsigned int enteringFingerprint(SendUartIDNum sendUartAddNewAppointUserIDSub,Se
     return lastAppendNewUserID;
 }
  
-void searchFingerprint(unsigned int lastAppendNewUserID, SendUartIDNum sendUartUserIDSub)         /* ÎªÊ¶±ğÄ£Ê½ */
+void searchFingerprint(uint16_t* lastAppendNewUserID, SendUartIDNum sendUartUserIDSub)         /* ÎªÊ¶±ğÄ£Ê½ */
 {
     searchnum = search();
     if((searchnum == 0) || (searchnum == 0xFFFF))     /* Ê¶±ğÖ¸ÎÆÊ§°Ü */
@@ -459,17 +465,18 @@ void searchFingerprint(unsigned int lastAppendNewUserID, SendUartIDNum sendUartU
     }
     if(searchnum >= 1 && searchnum <= 1000)
     {
-        if(searchnum == lastAppendNewUserID)
+        if(searchnum == *lastAppendNewUserID)
         {
-            lastAppendNewUserID = 0;
+            *lastAppendNewUserID = 0;
         }
         else  
         {
             sendUartUserIDSub(searchnum);
         }
     }
-
 }
+
+
 
 void setReadAddressMode(void)
 {

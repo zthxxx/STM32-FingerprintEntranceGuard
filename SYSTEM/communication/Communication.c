@@ -7,6 +7,7 @@
 #define FIFO_MAX_NUMBER    80
 
 
+uint8_t UART2_DMA_SendBuff[UART2_SEND_TEXT_LENTH];
 uint8_t *communicatFIFO;
 
 uint8_t Protocol_packetStratData[2] = {0xEF,0x02};
@@ -19,6 +20,20 @@ uint8_t Protocol_responseCommandByte = 0x00;
 uint8_t Protocol_checkSumDataHex[2] = {0x00,0xFF};
 uint16_t Protocol_packetAllDataSumLength = 0;
 uint8_t userIDPerfixByte = 0xAB;
+
+
+
+uint8_t receiveCountSign=0;//接受到第几位
+uint8_t isThePacketStart = 0;//是否有包
+uint8_t isThePacketEnd = 0;//是否包结束
+uint8_t packetSignDataByte = 0;//包标识
+uint16_t packetFollowLengthData = 0;//后续长度
+uint16_t packetUserSendDataLength = 0;//用户数据长度 = 后续长度 - 3
+uint8_t packetResponseCommandData = 0;//响应指令
+uint8_t packetUserReceiveData[50] = {0};//用户发送有效数据
+uint16_t packetCheckSumData = 0;//校验和
+uint8_t isDisableCheckSum = 1;//1为关闭校验和	
+uint8_t readRequestFlag = 0;//读取地址标记
 
 
 void sendUartUserID(uint16_t UserIDNum)
@@ -148,12 +163,9 @@ void sendUartOKDelOneUser(void)
 
 void sendPacketFIFO(uint16_t packetAllDataSumLength)
 {
-	uint8_t *packetDataFIFO = communicatFIFO;
-	while(packetAllDataSumLength--)
-	{
-		sendUart2OneByte(*packetDataFIFO);
-		packetDataFIFO++;
-	}	
+    memcpy(UART2_DMA_SendBuff,communicatFIFO,packetAllDataSumLength);
+    USART_DMACmd(USART2,USART_DMAReq_Tx,ENABLE); //串口向dma发出请求
+    UART2_TXD_DMA_Enable(packetAllDataSumLength);
 }
 
 void sendOnePacket(uint8_t packetSignByte,uint16_t userSendDataLength,uint8_t responseCommandByte,uint8_t *userSendData)
@@ -262,3 +274,105 @@ void RespondToPacket()
 	}	
 }
 
+
+
+uint8_t checkPacketCheckSumData()
+{
+	uint16_t thePacketCheckSum=0;
+	uint16_t count=0;
+	uint8_t isPacketSumRigth = 0;
+	thePacketCheckSum = packetSignDataByte + packetFollowLengthData + packetResponseCommandData;
+	for(count=0;count<packetUserSendDataLength;count++)
+	{
+		thePacketCheckSum += packetUserReceiveData[count];
+	}
+	
+	if(thePacketCheckSum == packetCheckSumData)
+	{
+		isPacketSumRigth = 1;
+	}
+	
+	return isPacketSumRigth;
+}
+
+
+void receiveUSART2Packet(uint8_t receiveByte)
+{
+	if(isThePacketStart)
+	{
+		if(receiveCountSign == 6)//&& receiveByte != 0xFF
+		{
+			packetSignDataByte = receiveByte;
+			receiveCountSign = 7;
+		}
+		else if(receiveCountSign == 7)
+		{
+			packetFollowLengthData = receiveByte & 0x00FF;
+			packetFollowLengthData <<= 8;
+			receiveCountSign = 8;
+		}
+		else if(receiveCountSign == 8)
+		{
+			packetFollowLengthData |= receiveByte & 0x00FF;
+			packetUserSendDataLength = packetFollowLengthData - 3;
+			receiveCountSign = 9;
+		}
+		else if(receiveCountSign == 9)
+		{
+			packetResponseCommandData = receiveByte;
+			receiveCountSign = 10;
+		}
+		else if((receiveCountSign >= 10) && (receiveCountSign < 10 + packetUserSendDataLength))
+		{
+			receiveCountSign++;			
+			packetUserReceiveData[receiveCountSign-11] = receiveByte;				
+		}
+		else if(receiveCountSign == 10 + packetUserSendDataLength)
+		{
+			packetCheckSumData = receiveByte & 0x00FF;
+			packetCheckSumData <<= 8;
+			receiveCountSign++;
+		}
+		else if(receiveCountSign == 11 + packetUserSendDataLength)
+		{
+			packetCheckSumData |= receiveByte & 0x00FF;
+			receiveCountSign++;
+			isThePacketEnd = 1;
+			isThePacketStart = 0;
+			receiveCountSign = 0;
+		}
+	}
+	else
+	{
+		if((receiveCountSign == 0)&&(receiveByte == Protocol_packetStratData[0]))//0xEF  
+		{
+			receiveCountSign = 1;
+		}
+		else if((receiveCountSign == 1)&&(receiveByte == Protocol_packetStratData[1]))//0x02
+		{
+			receiveCountSign = 2;
+		}
+		else if((receiveCountSign >= 2 && receiveCountSign <= 5)&&(receiveByte == Protocol_addressData[receiveCountSign-2]) && (readRequestFlag == 0))//0xFF 0xFF 0xFF 0xFF 
+		{
+			receiveCountSign++;
+			if(receiveCountSign >= 6) 
+				isThePacketStart = 1;
+		}
+		else if((receiveCountSign >= 2 && receiveCountSign <= 5)&&(receiveByte == Protocol_addressReadRequestData[receiveCountSign-2]))
+		{
+			receiveCountSign++;
+			readRequestFlag = 1;
+			if(receiveCountSign >= 6) 
+			{
+				readRequestFlag = 0;
+				receiveCountSign = 0;
+                modeflag = fingerprintReadAddressMode;
+			}
+		}		
+		else 
+		{
+			isThePacketEnd=0;
+			receiveCountSign = 0;
+		}
+	}
+}
