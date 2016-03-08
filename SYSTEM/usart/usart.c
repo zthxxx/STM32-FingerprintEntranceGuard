@@ -45,19 +45,22 @@ u8 USART_RX_BUF[USART_REC_LEN];     //接收缓冲,最大USART_REC_LEN个字节.
 u16 USART_RX_STA=0;       //接收状态标记	  
 
 
-
+extern uint8_t FingerPrintDataReadFlag;
 
 ReceiveUSART2PacketDelegate analyzeClientUARTPacket;//返回地址时的调用函数
+ReceiveUSART2PacketDelegate analyzeFingerModelPacket;//指纹机数据
 
 
 //初始化IO 串口1 
 //bound:波特率
-void uart_init(u32 bound){
+void uart_init(u32 bound, ReceiveUSART2PacketDelegate analyzeFingerModelPacketFun){
     //GPIO端口设置
     GPIO_InitTypeDef GPIO_InitStructure;
 	USART_InitTypeDef USART_InitStructure;
-	//NVIC_InitTypeDef NVIC_InitStructure;
+	NVIC_InitTypeDef NVIC_InitStructure;
 	 
+    
+    analyzeFingerModelPacket = analyzeFingerModelPacketFun;
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_USART1|RCC_APB2Periph_GPIOA, ENABLE);	//使能USART1，GPIOA时钟
  	USART_DeInit(USART1);  //复位串口1
 	 //USART1_TX   PA.9
@@ -73,11 +76,11 @@ void uart_init(u32 bound){
 
    //Usart1 NVIC 配置
 
-//  NVIC_InitStructure.NVIC_IRQChannel = USART1_IRQn;
-//	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority=3 ;//抢占优先级3
-//	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 3;		//子优先级3
-//	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;			//IRQ通道使能
-//	NVIC_Init(&NVIC_InitStructure);	//根据指定的参数初始化VIC寄存器
+    NVIC_InitStructure.NVIC_IRQChannel = USART1_IRQn;
+	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority=3 ;//抢占优先级3
+	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 3;		//子优先级3
+	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;			//IRQ通道使能
+	NVIC_Init(&NVIC_InitStructure);	//根据指定的参数初始化VIC寄存器
   
    //USART 初始化设置
 
@@ -164,7 +167,13 @@ void sendUart2OneByte(uint8_t byteData)
 }
 void USART1_IRQHandler(void)                	//串口1中断服务程序
 {
-	;
+	u8 receiveByte = 0;
+
+	if((FingerPrintDataReadFlag == 1) && (USART_GetITStatus(USART1, USART_IT_RXNE) != RESET))  //接收中断(接收到的数据必须是0x0d 0x0a结尾)
+	{
+		receiveByte = USART_ReceiveData(USART1);//(USART1->DR);		//读取接收到的数据			
+		analyzeFingerModelPacket(receiveByte);//解析接受的数据
+	}
 } 
 
 
@@ -174,7 +183,6 @@ void USART2_IRQHandler(void)                	//串口中断服务程序
 
 	if(USART_GetITStatus(USART2, USART_IT_RXNE) != RESET)  //接收中断(接收到的数据必须是0x0d 0x0a结尾)
 	{
-		RespondToPacket();//先判断上一包是否响应
 		receiveByte = USART_ReceiveData(USART2);//(USART1->DR);		//读取接收到的数据			
 		analyzeClientUARTPacket(receiveByte);//解析接受的数据
 	}

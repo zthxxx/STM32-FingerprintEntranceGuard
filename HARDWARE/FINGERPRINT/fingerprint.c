@@ -7,7 +7,7 @@ unsigned int 	DelNumber=0; //Ã¿Â¼ÈëÒ»´ÎSaveNumber++
 unsigned int    searchnum=0;
 unsigned int  	SearchNumber=0;		
 unsigned int 	clk0=0;
-
+extern void sendUart1OneByte(uint8_t byteData);
 unsigned char changeflag=0,modeflag=0,clearallflag=0;  
 //Ä¬ÈÏÎªÊ¶±ğÄ£Ê½£¬Èç¹ûÎª1ÎªÂ¼ÈëÖ¸ÎÆÄ£Ê½
 
@@ -18,13 +18,13 @@ unsigned char fingerprintDelAppointMode = 3;
 unsigned char fingerprintClearAllMode = 4;
 unsigned char fingerprintReadAddressMode = 5;
 
-
+uint8_t FingerPrintDataReadFlag = 0;
 
 #define MAX_NUMBER    80 
 
 unsigned char 	 FifoNumber=0; 
 unsigned char    FIFO[MAX_NUMBER]={0};
-
+extern void RespondToFingerModelPacket(void);
 
 
 //Verify  Password   £ºÑéÖ¤Éè±¸ÎÕÊÖ¿ÚÁî: ·¢ËÍ16¸ö×Ö½ÚµÄÊı¾İ¸ø´«¸ĞÆ÷£¬ ´«¸ĞÆ÷»Ø´«12¸ö×Ö½Ú
@@ -67,29 +67,42 @@ unsigned char DelChar[17]={16,0xef,0x01,0xff,0xff,0xff,0xff,0x01,0x00,0x07,0x0c,
  unsigned char  DELE_all[13]={12,0xef,0x01,0xff,0xff,0xff,0xff,0x01,0x00,0x03,0x0d,0x00,0x11};
 
 
-
-
-void TxdByte(unsigned int ch)//´®¿Ú·¢ËÍĞÅÏ¢,Í¨¹ı²éÑ¯·½Ê½·¢ËÍÒ»¸ö×Ö·û
+ 
+void SetUART1_NVIC_ISENABLE(uint8_t isEnable)
 {
-    USART_ClearFlag(USART1,USART_FLAG_TC);//ÏÈÇå³ıÒ»ÏÂ·¢ËÍÖĞ¶Ï±êÖ¾Î»£¬»á½â¾öµÚÒ»¸ö×Ö½Ú¶ªÊ§µÄÎÊÌâ¡£
-	USART_SendData(USART1, ch);
-	while(USART_GetFlagStatus(USART1,USART_FLAG_TC)!=SET);//µÈ´ı·¢ËÍ½áÊø
+    NVIC_InitTypeDef NVIC_InitStructure;
+    
+    NVIC_InitStructure.NVIC_IRQChannel = USART1_IRQn;
+	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority=3 ;//ÇÀÕ¼ÓÅÏÈ¼¶3
+	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 3;		//×ÓÓÅÏÈ¼¶3
+    if(isEnable == 1)
+    {
+        NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;			//IRQÍ¨µÀÊ¹ÄÜ
+    }
+    else
+    {
+        NVIC_InitStructure.NVIC_IRQChannelCmd = DISABLE;			//IRQÍ¨µÀÊ¹ÄÜ
+    }
+	
+	NVIC_Init(&NVIC_InitStructure);	//¸ù¾İÖ¸¶¨µÄ²ÎÊı³õÊ¼»¯VIC¼Ä´æÆ÷
 }
-
+ 
 
 unsigned char Command(unsigned char *p,unsigned char MaxTime) //ÃüÁî½âÎö,¸øÄ£¿é·¢ËÍÒ»¸öÃüÁî
 {
   	unsigned char count=0,tmpdat=0,temp=0,i=0,package=0,flag=0;
 	unsigned int  checksum=0;	
 	unsigned char result=0, start=0,stop=0;
-	 
+
+    SetUART1_NVIC_ISENABLE(0);    
+    
   	i=*p;             //Êı×éµÄµÚ¡°0¡±¸öÔªËØ¡¢ÀïÃæ´æ·ÅÁË±¾Êı×éµÄ³¤¶È£¬°ÑÕâ¸ö³¤¶È¸ø±äÁ¿i£¬·½±ã½øĞĞ²Ù×÷
 	p++;
 
   	for (count=0; count<i; count++)//°ÑÒª·¢¸øÖ¸ÎÆÄ£¿éµÄÃüÁîÍ¨¹ıµ¥Æ¬»ú´®¿Ú·¢ËÍ¸øÄ£¿é
     {
 		temp=*p;    //È¡µÃÀïÃæµÄÄÚÈİ£¬ÔÙÖ¸Õë¼Ó1£¬Ö¸ÏòÏÂÒ»¸öÃüÁî×Ö½Ú¡£
-		TxdByte(temp);//µ¥Æ¬»ú´®¿Ú½«Êı¾İ·¢ËÍ¸øÖ¸ÎÆÄ£¿é	
+		sendUart1OneByte(temp);//µ¥Æ¬»ú´®¿Ú½«Êı¾İ·¢ËÍ¸øÖ¸ÎÆÄ£¿é	
 		p++;
 	}
 	  
@@ -196,7 +209,17 @@ unsigned char Command(unsigned char *p,unsigned char MaxTime) //ÃüÁî½âÎö,¸øÄ£¿é·
 
 void ReadFingerData()
 {
-    
+    uint8_t sendLength = 0;
+    uint8_t sendCount = 0;
+    SetUART1_NVIC_ISENABLE(1);
+    sendLength = ReadFeature[0];
+    USART_ITConfig(USART1, USART_IT_RXNE, ENABLE);	//¿ªÆô½ÓÊÕÖĞ¶Ï
+    FingerPrintDataReadFlag = 1;
+    while(sendCount < sendLength)
+    {
+        sendUart1OneByte(ReadFeature[++sendCount]);
+    }
+    while(FingerPrintDataReadFlag == 1)RespondToFingerModelPacket();
 }
 
 unsigned char VefPSW(void)//ÑéÖ¤Éè±¸ÎÕÊÖ¿ÚÁî,³É¹¦·µ»Ø1     
@@ -435,22 +458,23 @@ unsigned int enteringFingerprint(SendUartIDNum sendUartAddNewAppointUserIDSub,Se
     {
         if(enroll() == 1)                                                           /* ²É¼¯Á½´Î£¬Éú³É1¸öÖ¸ÎÆÄ£°å³É¹¦ */
         {
-            if(savefingure(SaveNumber ? SaveNumber : ++SaveNumber)== 1)      /* ±£´æÒ²³É¹¦ */
-            {
-                delay_ms(100);
-                
-                if(IsAppointUserID == 1)
-                {
-                    IsAppointUserID = 0;
-                    sendUartAddNewAppointUserIDSub(SaveNumber);
-                }
-                else
-                {
-                    sendUartAddNewUserIDSub(SaveNumber);
-                }
-                lastAppendNewUserID = SaveNumber;
-                SaveNumber++;                                                   /* ¼ÓÒ»´Î */
-            }
+            ReadFingerData();
+//            if(savefingure(SaveNumber ? SaveNumber : ++SaveNumber)== 1)      /* ±£´æÒ²³É¹¦ */
+//            {
+//                delay_ms(100);
+//                
+//                if(IsAppointUserID == 1)
+//                {
+//                    IsAppointUserID = 0;
+//                    sendUartAddNewAppointUserIDSub(SaveNumber);
+//                }
+//                else
+//                {
+//                    sendUartAddNewUserIDSub(SaveNumber);
+//                }
+//                lastAppendNewUserID = SaveNumber;
+//                SaveNumber++;                                                   /* ¼ÓÒ»´Î */
+//            }
         }
     }
     return lastAppendNewUserID;

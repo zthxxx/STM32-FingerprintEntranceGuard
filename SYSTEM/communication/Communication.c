@@ -30,11 +30,16 @@ uint8_t packetSignDataByte = 0;//包标识
 uint16_t packetFollowLengthData = 0;//后续长度
 uint16_t packetUserSendDataLength = 0;//用户数据长度 = 后续长度 - 3
 uint8_t packetResponseCommandData = 0;//响应指令
-uint8_t packetUserReceiveData[50] = {0};//用户发送有效数据
+uint8_t packetUserReceiveData[500] = {0};//用户发送有效数据
 uint16_t packetCheckSumData = 0;//校验和
 uint8_t isDisableCheckSum = 1;//1为关闭校验和	
 uint8_t readRequestFlag = 0;//读取地址标记
 
+
+void retransmissionFingerPrintData(uint8_t* userSendData,uint16_t userSendDataLength)
+{
+    sendOnePacket(0x04,userSendDataLength,0x03,userSendData);
+}
 
 void sendUartUserID(uint16_t UserIDNum)
 {
@@ -163,9 +168,16 @@ void sendUartOKDelOneUser(void)
 
 void sendPacketFIFO(uint16_t packetAllDataSumLength)
 {
-    memcpy(UART2_DMA_SendBuff,communicatFIFO,packetAllDataSumLength);
-    USART_DMACmd(USART2,USART_DMAReq_Tx,ENABLE); //串口向dma发出请求
-    UART2_TXD_DMA_Enable(packetAllDataSumLength);
+//    memcpy(UART2_DMA_SendBuff,communicatFIFO,packetAllDataSumLength);
+//    USART_DMACmd(USART2,USART_DMAReq_Tx,ENABLE); //串口向dma发出请求
+//    UART2_TXD_DMA_Enable(packetAllDataSumLength);
+    
+    uint8_t *packetDataFIFO = communicatFIFO;
+	while(packetAllDataSumLength--)
+	{
+		sendUart2OneByte(*packetDataFIFO);
+		packetDataFIFO++;
+	}
 }
 
 void sendOnePacket(uint8_t packetSignByte,uint16_t userSendDataLength,uint8_t responseCommandByte,uint8_t *userSendData)
@@ -298,6 +310,7 @@ uint8_t checkPacketCheckSumData()
 
 void receiveUSART2Packet(uint8_t receiveByte)
 {
+    RespondToPacket();//先判断上一包是否响应
 	if(isThePacketStart)
 	{
 		if(receiveCountSign == 6)//&& receiveByte != 0xFF

@@ -20,6 +20,7 @@ unsigned char savefingure(unsigned int ID);//保存指纹
 unsigned char enroll(void); //采集两次指纹，生成1个 指纹模板
 unsigned char delfingure(unsigned int ID);//保存指纹
 unsigned int enteringFingerprint(SendUartIDNum, SendUartIDNum);
+void ReadFingerData(void);
 void setReadAddressMode(void);
 void searchFingerprint(uint16_t* lastAppendNewUserID, SendUartIDNum);
 
@@ -37,6 +38,9 @@ extern unsigned char fingerprintAddAppointMode;//2
 extern unsigned char fingerprintDelAppointMode;
 extern unsigned char fingerprintClearAllMode;
 extern unsigned char fingerprintReadAddressMode;
+
+extern uint8_t FingerPrintDataReadFlag;
+
 #endif
 
 	
