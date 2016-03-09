@@ -24,26 +24,28 @@ uint8_t Finger_Model_packetUserReceiveData[500] = {0};//用户发送有效数据
 uint16_t Finger_Model_packetCheckSum = 0;
 uint8_t Finger_Model_packetCheckSumData[2] = {0};//校验和
 uint8_t FingerModelDataPacket[500];
+uint8_t SendPacketFramePosition = 0;
 
-uint8_t countReacive = 0;
 extern uint8_t FingerPrintDataReadFlag;
-extern void retransmissionFingerPrintData(uint8_t* userSendData,uint16_t userSendDataLength);
+extern void retransmissionFingerPrintData(uint8_t* userSendData,uint16_t userSendDataLength,uint8_t ResponseCommandData);
 
 
 void combinationFingerModelDataPacket()
-{
-    
-    //FingerModelDataPacket = (uint8_t *)calloc(Finger_Model_packetDataLength, sizeof(uint8_t));
-    
+{    
     memcpy(FingerModelDataPacket,Finger_Model_Protocol_packetStratData,2);
 	memcpy(FingerModelDataPacket + 2,Finger_Model_Protocol_addressData,4);
 	memcpy(FingerModelDataPacket + 6,&Finger_Model_packetSignDataByte,1);
 	memcpy(FingerModelDataPacket + 7, Finger_Model_packetFollowLengthData,2);
 	memcpy(FingerModelDataPacket + 9,Finger_Model_packetUserReceiveData,Finger_Model_packetUserSendDataLength);
     memcpy(FingerModelDataPacket + 9 + Finger_Model_packetUserSendDataLength,Finger_Model_packetCheckSumData,2);
-
 }
 
+
+void returnFingerPrintData(uint8_t ResponseCommandData)
+{
+    combinationFingerModelDataPacket();
+    retransmissionFingerPrintData(FingerModelDataPacket, Finger_Model_packetDataLength, ResponseCommandData);  
+}
 
 uint8_t checkFingerModelPacketCheckSum()
 {
@@ -64,34 +66,34 @@ uint8_t checkFingerModelPacketCheckSum()
 	return isPacketSumRigth;
 }
 
-
-
 void RespondToFingerModelPacket()
 {
 	if(Finger_Model_isThePacketEnd)
 	{
         Finger_Model_isThePacketEnd=0;
 		if(Finger_Model_Protocol_isDisableCheckSum || checkFingerModelPacketCheckSum())
-		{
-            
+		{          
 			switch(Finger_Model_packetSignDataByte)
 			{
 				case 0x02:
-                    countReacive++;
-                    combinationFingerModelDataPacket();
-                    retransmissionFingerPrintData(FingerModelDataPacket, Finger_Model_packetDataLength);
+                    if(SendPacketFramePosition++ > 0)
+                    {
+                        returnFingerPrintData(0x03);
+                    }
+                    else
+                    {
+                        returnFingerPrintData(0x04);
+                    }
                     break;
                 case 0x08:
-                    combinationFingerModelDataPacket();
-                    retransmissionFingerPrintData(FingerModelDataPacket, Finger_Model_packetDataLength);
+                    returnFingerPrintData(0x05);
+                    SendPacketFramePosition = 0;
                     FingerPrintDataReadFlag = 0;
                     break;
                 default:
                     break;
 			}
-		}
-		
-        
+		}  
 	}	
 }
 

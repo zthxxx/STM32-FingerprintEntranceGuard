@@ -3,7 +3,7 @@
 
 #include "stdlib.h"
 #include "sys.h"   //与STM32相关的一些定义
-
+#include "fingerRead.h"
 
 /*********1毫秒延时程序**********/
 typedef void (*SendUartIDNum)(uint16_t);
@@ -21,6 +21,8 @@ unsigned char enroll(void); //采集两次指纹，生成1个 指纹模板
 unsigned char delfingure(unsigned int ID);//保存指纹
 unsigned int enteringFingerprint(SendUartIDNum, SendUartIDNum);
 void ReadFingerData(void);
+void WriteFingerFeatureInstruct(void);
+void WriteFingerFeatureData(uint8_t* packetUserReceiveData,uint16_t packetUserSendDataLength);
 void setReadAddressMode(void);
 void searchFingerprint(uint16_t* lastAppendNewUserID, SendUartIDNum);
 
@@ -31,7 +33,7 @@ extern unsigned int 	DelNumber;
 extern unsigned int     searchnum;
 extern unsigned int  	SearchNumber;
 extern unsigned char    changeflag,modeflag,clearallflag;  
-
+extern unsigned char   IsImportUser;
 extern unsigned char fingerprintSearchMode;//0
 extern unsigned char fingerprintAddInOrderMode;//1
 extern unsigned char fingerprintAddAppointMode;//2

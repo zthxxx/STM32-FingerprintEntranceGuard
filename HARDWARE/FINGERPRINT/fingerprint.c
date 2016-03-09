@@ -3,10 +3,13 @@
 
 unsigned int 	SaveNumber=0; //Ã¿Â¼ÈëÒ»´ÎSaveNumber++
 unsigned int 	IsAppointUserID = 0;
+
 unsigned int 	DelNumber=0; //Ã¿Â¼ÈëÒ»´ÎSaveNumber++
 unsigned int    searchnum=0;
 unsigned int  	SearchNumber=0;		
 unsigned int 	clk0=0;
+unsigned char   IsImportUser = 0;
+
 extern void sendUart1OneByte(uint8_t byteData);
 unsigned char changeflag=0,modeflag=0,clearallflag=0;  
 //Ä¬ÈÏÎªÊ¶±ğÄ£Ê½£¬Èç¹ûÎª1ÎªÂ¼ÈëÖ¸ÎÆÄ£Ê½
@@ -24,7 +27,7 @@ uint8_t FingerPrintDataReadFlag = 0;
 
 unsigned char 	 FifoNumber=0; 
 unsigned char    FIFO[MAX_NUMBER]={0};
-extern void RespondToFingerModelPacket(void);
+
 
 
 //Verify  Password   £ºÑéÖ¤Éè±¸ÎÕÊÖ¿ÚÁî: ·¢ËÍ16¸ö×Ö½ÚµÄÊı¾İ¸ø´«¸ĞÆ÷£¬ ´«¸ĞÆ÷»Ø´«12¸ö×Ö½Ú
@@ -54,10 +57,13 @@ extern void RespondToFingerModelPacket(void);
 //¶ÁÈ¡µ±Ç°»º³åÇøÌØÕ÷Êı¾İ
  unsigned char  ReadFeature[14]={13,0xef,0x01,0xff,0xff,0xff,0xff,0x01,0x00,0x04,0x08,0x01,0x00,0x0E};
  
+ //Ğ´Èëµ±Ç°»º³åÇøÌØÕ÷Êı¾İ
+ unsigned char  WriteFeature[14]={13,0xef,0x01,0xff,0xff,0xff,0xff,0x01,0x00,0x04,0x09,0x01,0x00,0x0F};
+ 
 //Store Templet      £º½«ModelBuffer2ÖĞµÄÎÄ¼ş´¢´æµ½flashÖ¸ÎÆ¿âÖĞ
 //µ¥Æ¬»ú·¢ËÍ15¸ö×Ö½Ú¸øÖ¸ÎÆÄ£¿é£¬Ö¸ÎÆÄ£¿é»Ø´«12¸ö×Ö½Ú
 //Õâ¸öÖ»ÊÇ»ù±¾µÄÃüÁî£¬ÀïÃæµÄÎ»ÖÃÊÇÒªÄÜ¸Ä±äµÄ£¬Çë²é¿´´æ´¢º¯Êı£¬ÀïÃæÓĞÁÙÊ±±äÁ¿£¬»áÖØĞÂ¸³Öµ
- unsigned char   STOR[16]={15,0xef,0x01,0xff,0xff,0xff,0xff,0x01,0x00,0x06,0x06,0x02,0x00,0x00,0x00,0x0f};
+ unsigned char   STOR[16]={15,0xef,0x01,0xff,0xff,0xff,0xff,0x01,0x00,0x06,0x06,0x01,0x00,0x00,0x00,0x0f};
  //DEL templet      ;É¾³ıÖ¸¶¨
 unsigned char DelChar[17]={16,0xef,0x01,0xff,0xff,0xff,0xff,0x01,0x00,0x07,0x0c,0x00,0x00,0x00,0x01,0x00,0x0f};
  
@@ -206,21 +212,45 @@ unsigned char Command(unsigned char *p,unsigned char MaxTime) //ÃüÁî½âÎö,¸øÄ£¿é·
    return (result);
 }
 
-
-void ReadFingerData()
+void WriteFingerModelCommand(uint8_t* CommandInstruct)
 {
     uint8_t sendLength = 0;
     uint8_t sendCount = 0;
-    SetUART1_NVIC_ISENABLE(1);
-    sendLength = ReadFeature[0];
-    USART_ITConfig(USART1, USART_IT_RXNE, ENABLE);	//¿ªÆô½ÓÊÕÖĞ¶Ï
-    FingerPrintDataReadFlag = 1;
+    sendLength = CommandInstruct[0];
     while(sendCount < sendLength)
     {
-        sendUart1OneByte(ReadFeature[++sendCount]);
+        sendUart1OneByte(CommandInstruct[++sendCount]);
     }
-    while(FingerPrintDataReadFlag == 1)RespondToFingerModelPacket();
 }
+
+void ReadFingerData()
+{
+    SetUART1_NVIC_ISENABLE(1);
+    USART_ITConfig(USART1, USART_IT_RXNE, ENABLE);	//¿ªÆô½ÓÊÕÖĞ¶Ï
+    FingerPrintDataReadFlag = 1;
+    WriteFingerModelCommand(ReadFeature);
+    while(FingerPrintDataReadFlag == 1)
+    {
+        RespondToFingerModelPacket();
+    }
+}
+
+void WriteFingerFeatureInstruct()
+{
+    WriteFingerModelCommand(WriteFeature);
+}
+
+
+void WriteFingerFeatureData(uint8_t* packetUserReceiveData,uint16_t packetUserSendDataLength)
+{
+    uint8_t *packetDataFIFO = packetUserReceiveData;
+	while(packetUserSendDataLength--)
+	{
+		sendUart1OneByte(*packetDataFIFO);
+		packetDataFIFO++;
+	}
+}
+
 
 unsigned char VefPSW(void)//ÑéÖ¤Éè±¸ÎÕÊÖ¿ÚÁî,³É¹¦·µ»Ø1     
 {
@@ -251,7 +281,6 @@ unsigned char Clear_All(void) //Çå¿ÕÖ¸ÎÆ¿â
       {
           return 0;
       }
-          
 }
 
 unsigned char ImgProcess(unsigned char BUFID)  //·¢»ñÈ¡Í¼Ïñ²¢Éú³ÉÌØÕ÷ÎÄ¼ş£¬´æÈëBUFIDÖĞ//ÊäÈë²ÎÊıÎª»º³åÇøºÅ  
@@ -458,23 +487,22 @@ unsigned int enteringFingerprint(SendUartIDNum sendUartAddNewAppointUserIDSub,Se
     {
         if(enroll() == 1)                                                           /* ²É¼¯Á½´Î£¬Éú³É1¸öÖ¸ÎÆÄ£°å³É¹¦ */
         {
-            ReadFingerData();
-//            if(savefingure(SaveNumber ? SaveNumber : ++SaveNumber)== 1)      /* ±£´æÒ²³É¹¦ */
-//            {
-//                delay_ms(100);
-//                
-//                if(IsAppointUserID == 1)
-//                {
-//                    IsAppointUserID = 0;
-//                    sendUartAddNewAppointUserIDSub(SaveNumber);
-//                }
-//                else
-//                {
-//                    sendUartAddNewUserIDSub(SaveNumber);
-//                }
-//                lastAppendNewUserID = SaveNumber;
-//                SaveNumber++;                                                   /* ¼ÓÒ»´Î */
-//            }
+            if(savefingure(SaveNumber ? SaveNumber : ++SaveNumber)== 1)      /* ±£´æÒ²³É¹¦ */
+            {
+                delay_ms(100);              
+                if(IsAppointUserID == 1)
+                {
+                    IsAppointUserID = 0;
+                    sendUartAddNewAppointUserIDSub(SaveNumber);
+                }
+                else
+                {
+                    sendUartAddNewUserIDSub(SaveNumber);
+                }
+                lastAppendNewUserID = SaveNumber;
+                SaveNumber++;                                                   /* ¼ÓÒ»´Î */
+                ReadFingerData();
+            }
         }
     }
     return lastAppendNewUserID;

@@ -36,9 +36,9 @@ uint8_t isDisableCheckSum = 1;//1为关闭校验和
 uint8_t readRequestFlag = 0;//读取地址标记
 
 
-void retransmissionFingerPrintData(uint8_t* userSendData,uint16_t userSendDataLength)
+void retransmissionFingerPrintData(uint8_t* userSendData,uint16_t userSendDataLength,uint8_t ResponseCommandData)
 {
-    sendOnePacket(0x04,userSendDataLength,0x03,userSendData);
+    sendOnePacket(0x04,userSendDataLength,ResponseCommandData,userSendData);
 }
 
 void sendUartUserID(uint16_t UserIDNum)
@@ -168,16 +168,16 @@ void sendUartOKDelOneUser(void)
 
 void sendPacketFIFO(uint16_t packetAllDataSumLength)
 {
-//    memcpy(UART2_DMA_SendBuff,communicatFIFO,packetAllDataSumLength);
-//    USART_DMACmd(USART2,USART_DMAReq_Tx,ENABLE); //串口向dma发出请求
-//    UART2_TXD_DMA_Enable(packetAllDataSumLength);
+    memcpy(UART2_DMA_SendBuff,communicatFIFO,packetAllDataSumLength);
+    USART_DMACmd(USART2,USART_DMAReq_Tx,ENABLE); //串口向dma发出请求
+    UART2_TXD_DMA_Enable(packetAllDataSumLength);
     
-    uint8_t *packetDataFIFO = communicatFIFO;
-	while(packetAllDataSumLength--)
-	{
-		sendUart2OneByte(*packetDataFIFO);
-		packetDataFIFO++;
-	}
+//    uint8_t *packetDataFIFO = communicatFIFO;
+//	while(packetAllDataSumLength--)
+//	{
+//		sendUart2OneByte(*packetDataFIFO);
+//		packetDataFIFO++;
+//	}
 }
 
 void sendOnePacket(uint8_t packetSignByte,uint16_t userSendDataLength,uint8_t responseCommandByte,uint8_t *userSendData)
@@ -237,8 +237,20 @@ void RespondToPacket()
 				break;
 				case 0x02://新增用户
 					if(packetResponseCommandData == 0x00)
-						modeflag = fingerprintAddInOrderMode;//新增一个用户					
+                    {
+                        modeflag = fingerprintAddInOrderMode;//新增一个用户
+                    }
 				break;
+                case 0x04://导入指定用户
+                    if(packetUserReceiveData[0] == userIDPerfixByte)
+					{		
+						SaveNumber = packetUserReceiveData[1];
+						SaveNumber <<= 8 ;
+						SaveNumber += packetUserReceiveData[2];
+						IsImportUser = 1;
+                        WriteFingerFeatureInstruct();
+					}
+                break;
 				case 0x06://新增指定用户
 					if(packetUserReceiveData[0] == userIDPerfixByte)
 					{		
@@ -253,6 +265,16 @@ void RespondToPacket()
 						sendUartForResend();
 					}
 				break;
+                case 0x07://添加指定用户指纹
+                    WriteFingerFeatureData(packetUserReceiveData,packetUserSendDataLength);
+                    if(packetResponseCommandData == 0x05)
+                    {
+                        if(savefingure(SaveNumber ? SaveNumber : ++SaveNumber)== 1)      /* 保存也成功 */
+                        {
+                            sendUartAddNewAppointUserID(SaveNumber);
+                        }
+                    }
+                break;
 				case 0x08://校正时间
 					WriteDS1302ClockASCII(packetUserReceiveData);
 					sendUartTimeData();
