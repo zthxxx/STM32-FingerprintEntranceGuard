@@ -208,6 +208,7 @@ unsigned char Command(unsigned char *p,unsigned char MaxTime) //ÃüÁî½âÎö,¸øÄ£¿é·
 		while ((clk0 <= MaxTime) && (count <MAX_NUMBER) && (changeflag==0)); //ÓÉ¶¨Ê±Æ÷ÒÔ¼°×î´ó½ÓÊÕÊı¾İÀ´¿ØÖÆ£¬±£Ö¤²»»áÔÚ´ËÒ»Ö±Ñ­»·
         USART_ClearFlag(USART1,USART_FLAG_RXNE);	 //Çå³ı´®¿Ú½ÓÊÕÖĞ¶Ï/;
 		FifoNumber = count;	//±£´æ½ÓÊÕµ½µÄÊı¾İ¸öÊı
+        FingerPrintDataReadFlag = 0;
 	 }
    return (result);
 }
@@ -229,7 +230,8 @@ void ReadFingerData()
     USART_ITConfig(USART1, USART_IT_RXNE, ENABLE);	//¿ªÆô½ÓÊÕÖĞ¶Ï
     FingerPrintDataReadFlag = 1;
     WriteFingerModelCommand(ReadFeature);
-    while(FingerPrintDataReadFlag == 1)
+    clk0 = 0;
+    while(FingerPrintDataReadFlag == 1 && clk0 <= 200)
     {
         RespondToFingerModelPacket();
     }

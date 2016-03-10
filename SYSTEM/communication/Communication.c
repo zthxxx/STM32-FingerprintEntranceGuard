@@ -36,6 +36,8 @@ uint8_t isDisableCheckSum = 1;//1为关闭校验和
 uint8_t readRequestFlag = 0;//读取地址标记
 
 
+uint8_t FeatureWritedcount = 0;
+
 void retransmissionFingerPrintData(uint8_t* userSendData,uint16_t userSendDataLength,uint8_t ResponseCommandData)
 {
     sendOnePacket(0x04,userSendDataLength,ResponseCommandData,userSendData);
@@ -267,6 +269,7 @@ void RespondToPacket()
 				break;
                 case 0x07://添加指定用户指纹
                     WriteFingerFeatureData(packetUserReceiveData,packetUserSendDataLength);
+                    FeatureWritedcount++;
                     if(packetResponseCommandData == 0x05)
                     {
                         if(savefingure(SaveNumber ? SaveNumber : ++SaveNumber)== 1)      /* 保存也成功 */
