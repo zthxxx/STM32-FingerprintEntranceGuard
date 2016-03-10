@@ -297,6 +297,7 @@ void RespondToPacket()
 				break;
 				case 0x10://全部清空
 					modeflag = fingerprintClearAllMode;//清空全部用户
+                    FeatureWritedcount = 0;
 				break;
 				case 0x13://重新发包
 					sendPacketFIFO(Protocol_packetAllDataSumLength);
