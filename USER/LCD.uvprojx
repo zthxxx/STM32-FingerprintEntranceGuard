@@ -347,7 +347,7 @@
           </ArmAdsMisc>
           <Cads>
             <interw>1</interw>
-            <Optim>2</Optim>
+            <Optim>1</Optim>
             <oTime>0</oTime>
             <SplitLS>0</SplitLS>
             <OneElfS>0</OneElfS>
@@ -365,7 +365,7 @@
               <MiscControls></MiscControls>
               <Define>STM32F10X_HD,USE_STDPERIPH_DRIVER</Define>
               <Undefine></Undefine>
-              <IncludePath>。;..\SYSTEM\delay;..\SYSTEM\sys;..\SYSTEM\usart;..\USER;..\STM32F10x_FWLib\inc;..\CORE;..\HARDWARE\LCD;..\HARDWARE\FINGERPRINT;..\HARDWARE\KEY;..\HARDWARE\TIMER;..\SYSTEM\communication;..\SYSTEM\ds1302;..\HARDWARE\DMA;..\HARDWARE;..\SYSTEM\fingerRead</IncludePath>
+              <IncludePath>..\SYSTEM\delay;..\SYSTEM\sys;..\SYSTEM\usart;..\USER;..\STM32F10x_FWLib\inc;..\CORE;..\HARDWARE\LCD;..\HARDWARE\FINGERPRINT;..\HARDWARE\KEY;..\HARDWARE\TIMER;..\SYSTEM\communication;..\SYSTEM\ds1302;..\HARDWARE\DMA;..\HARDWARE;..\SYSTEM\fingerRead;..\SYSTEM\FIFO</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -477,6 +477,11 @@
               <FileName>fingerRead.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\SYSTEM\fingerRead\fingerRead.c</FilePath>
+            </File>
+            <File>
+              <FileName>FIFO.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\SYSTEM\FIFO\FIFO.c</FilePath>
             </File>
           </Files>
         </Group>

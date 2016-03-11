@@ -32,7 +32,12 @@ int main(void)
     
 	while(1)
 	{
-		RespondToPacket();
+     
+        while(Uint8FIFOQueueHand->head != NULL)
+        {       
+            receiveUSART2Packet(Uint8FIFOPop(Uint8FIFOQueueHand));//解析接受的数据
+        }
+
         switch(modeflag)
         {
             case 0:                      /* 为识别模式 */
@@ -66,6 +71,7 @@ int main(void)
             default:
                 break;
         }
+        
         
         if(modeflag == fingerprintReadAddressMode)
         {

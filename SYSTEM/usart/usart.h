@@ -1,8 +1,10 @@
 #ifndef __USART_H
 #define __USART_H
 #include "stdio.h"	
+#include "stdlib.h"
 #include "sys.h" 
-//#include "fingerprint.h"
+#include "FIFO.h"
+
 //////////////////////////////////////////////////////////////////////////////////	 
 //本程序只供学习使用，未经作者许可，不得用于其它任何用途
 //Mini STM32开发板
@@ -31,6 +33,7 @@
 	  	
 extern u8  USART_RX_BUF[USART_REC_LEN]; //接收缓冲,最大USART_REC_LEN个字节.末字节为换行符 
 extern u16 USART_RX_STA;         		//接收状态标记	
+extern Uint8FIFOQueue* Uint8FIFOQueueHand;
 
 typedef void (*ReceiveUSART2PacketDelegate)(uint8_t);
 

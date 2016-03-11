@@ -11,7 +11,7 @@
 
 extern uint8_t UART2_DMA_SendBuff[UART2_SEND_TEXT_LENTH];
 extern uint8_t *communicatFIFO;
-
+extern uint8_t isHandleThePacket;
 void sendUartUserID(uint16_t UserIDNum);
 void sendUartAddNewUserID(uint16_t UserIDNum);
 void sendUartAddNewAppointUserID(uint16_t UserIDNum);

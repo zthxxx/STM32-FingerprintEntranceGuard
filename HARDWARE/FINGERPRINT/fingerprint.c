@@ -224,7 +224,7 @@ void WriteFingerModelCommand(uint8_t* CommandInstruct)
     }
 }
 
-void ReadFingerData()
+void ReadFingerFeatureData()
 {
     SetUART1_NVIC_ISENABLE(1);
     USART_ITConfig(USART1, USART_IT_RXNE, ENABLE);	//开启接收中断
@@ -240,6 +240,7 @@ void ReadFingerData()
 void WriteFingerFeatureInstruct()
 {
     WriteFingerModelCommand(WriteFeature);
+    delay_ms(200);
 }
 
 
@@ -503,7 +504,7 @@ unsigned int enteringFingerprint(SendUartIDNum sendUartAddNewAppointUserIDSub,Se
                 }
                 lastAppendNewUserID = SaveNumber;
                 SaveNumber++;                                                   /* 加一次 */
-                ReadFingerData();
+                ReadFingerFeatureData();
             }
         }
     }

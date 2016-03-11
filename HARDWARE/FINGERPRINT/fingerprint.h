@@ -20,7 +20,7 @@ unsigned char savefingure(unsigned int ID);//保存指纹
 unsigned char enroll(void); //采集两次指纹，生成1个 指纹模板
 unsigned char delfingure(unsigned int ID);//保存指纹
 unsigned int enteringFingerprint(SendUartIDNum, SendUartIDNum);
-void ReadFingerData(void);
+void ReadFingerFeatureData(void);
 void WriteFingerFeatureInstruct(void);
 void WriteFingerFeatureData(uint8_t* packetUserReceiveData,uint16_t packetUserSendDataLength);
 void setReadAddressMode(void);
