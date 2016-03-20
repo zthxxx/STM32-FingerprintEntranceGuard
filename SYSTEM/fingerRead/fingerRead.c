@@ -98,9 +98,8 @@ void RespondToFingerModelPacket()
 }
 
 
-void receiveFingerModelPacket(uint8_t receiveByte)
+void ReceiveFingerModelPacket(uint8_t receiveByte)
 {
-    RespondToFingerModelPacket();
 	if(Finger_Model_isThePacketStart)
 	{
 		if(Finger_Model_receiveCountSign == 6)//&& receiveByte != 0xFF
@@ -142,6 +141,7 @@ void receiveFingerModelPacket(uint8_t receiveByte)
 			Finger_Model_isThePacketEnd = 1;
 			Finger_Model_isThePacketStart = 0;
 			Finger_Model_receiveCountSign = 0;
+            RespondToFingerModelPacket();
 		}
 	}
 	else
@@ -166,4 +166,14 @@ void receiveFingerModelPacket(uint8_t receiveByte)
 			Finger_Model_receiveCountSign = 0;
 		}
 	}
+}
+
+
+
+void ReadAndProcessFingerPacketFIFO(void)
+{
+    while(Uint8Uart1FIFOQueueHand->head != NULL)
+    {       
+        ReceiveFingerModelPacket(Uint8FIFOPop(Uint8Uart1FIFOQueueHand));//解析接受到指纹机的数据
+    }  
 }

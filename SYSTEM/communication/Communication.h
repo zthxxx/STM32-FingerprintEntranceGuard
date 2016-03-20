@@ -29,5 +29,5 @@ uint8_t checkPacketCheckSumData(void);
 void receiveUSART2Packet(uint8_t receiveByte);
 typedef void (*RequestLocalAddress)(void);
 void retransmissionFingerPrintData(uint8_t* userSendData,uint16_t userSendDataLength,uint8_t ResponseCommandData);
-
+void ReadAndProcessLevelControlPCPacketFIFO(void);
 #endif

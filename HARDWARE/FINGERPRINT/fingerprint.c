@@ -233,7 +233,7 @@ void ReadFingerFeatureData()
     clk0 = 0;
     while(FingerPrintDataReadFlag == 1 && clk0 <= 200)
     {
-        RespondToFingerModelPacket();
+        ReadAndProcessFingerPacketFIFO();
     }
 }
 

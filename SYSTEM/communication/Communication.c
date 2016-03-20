@@ -413,5 +413,15 @@ void receiveUSART2Packet(uint8_t receiveByte)
             receiveCountSign = 0;
         }
     }
-
 }
+
+void ReadAndProcessLevelControlPCPacketFIFO(void)
+{
+    while(Uint8Uart2FIFOQueueHand->head != NULL)
+    {       
+        receiveUSART2Packet(Uint8FIFOPop(Uint8Uart2FIFOQueueHand));//解析接受到上位机的数据
+    } 
+}
+
+
+

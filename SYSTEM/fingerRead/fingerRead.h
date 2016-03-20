@@ -4,10 +4,11 @@
 #include "stdlib.h"
 #include "sys.h"   //与STM32相关的一些定义
 #include <string.h>
+#include "usart.h"	  
 
-void receiveFingerModelPacket(uint8_t receiveByte);
+void ReceiveFingerModelPacket(uint8_t receiveByte);
 void RespondToFingerModelPacket(void);
-
+void ReadAndProcessFingerPacketFIFO(void);
 
 
 

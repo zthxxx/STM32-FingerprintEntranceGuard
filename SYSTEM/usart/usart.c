@@ -48,21 +48,18 @@ u16 USART_RX_STA=0;       //接收状态标记
 extern uint8_t FingerPrintDataReadFlag;
 extern uint8_t isHandleThePacket;
 
-ReceiveUSART2PacketDelegate analyzeClientUARTPacket;//返回地址时的调用函数
-ReceiveUSART2PacketDelegate analyzeFingerModelPacket;//指纹机数据
-
-Uint8FIFOQueue* Uint8FIFOQueueHand;
+Uint8FIFOQueue* Uint8Uart1FIFOQueueHand;
+Uint8FIFOQueue* Uint8Uart2FIFOQueueHand;
 
 //初始化IO 串口1 
 //bound:波特率
-void uart_init(u32 bound, ReceiveUSART2PacketDelegate analyzeFingerModelPacketFun){
+void uart_init(u32 bound)
+{
     //GPIO端口设置
     GPIO_InitTypeDef GPIO_InitStructure;
 	USART_InitTypeDef USART_InitStructure;
 	NVIC_InitTypeDef NVIC_InitStructure;
 	 
-    
-    analyzeFingerModelPacket = analyzeFingerModelPacketFun;
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_USART1|RCC_APB2Periph_GPIOA, ENABLE);	//使能USART1，GPIOA时钟
  	USART_DeInit(USART1);  //复位串口1
 	 //USART1_TX   PA.9
@@ -96,9 +93,9 @@ void uart_init(u32 bound, ReceiveUSART2PacketDelegate analyzeFingerModelPacketFu
     USART_Init(USART1, &USART_InitStructure);     //初始化串口
     USART_ITConfig(USART1, USART_IT_RXNE, ENABLE);//开启中断
     USART_Cmd(USART1, ENABLE);                    //使能串口 
-
+    Uint8Uart1FIFOQueueHand = CreatUint8FIFOQueue();
 }
-void uart2_init(u32 bound, ReceiveUSART2PacketDelegate analyzeClientUARTPacketFun)
+void uart2_init(u32 bound)
 {
     
     //GPIO端口设置,结构体申明
@@ -107,7 +104,6 @@ void uart2_init(u32 bound, ReceiveUSART2PacketDelegate analyzeClientUARTPacketFu
 	USART_ClockInitTypeDef USART_ClockInitStruct;
 	NVIC_InitTypeDef NVIC_InitStructure;
 
-    analyzeClientUARTPacket = analyzeClientUARTPacketFun;
     
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA, ENABLE);
 	RCC_APB1PeriphClockCmd(RCC_APB1Periph_USART2 , ENABLE); 	//使能USART1，GPIOA时钟
@@ -151,7 +147,7 @@ void uart2_init(u32 bound, ReceiveUSART2PacketDelegate analyzeClientUARTPacketFu
 	USART_ITConfig(USART2, USART_IT_RXNE, ENABLE);	//开启接收中断
 	//USART_ITConfig(USART2, USART_IT_TXE, ENABLE);	//开启发送中断
 	USART_Cmd(USART2, ENABLE);     //启动串口
-    Uint8FIFOQueueHand = CreatUint8FIFOQueue();
+    Uint8Uart2FIFOQueueHand = CreatUint8FIFOQueue();
 }
 
 void sendUart1OneByte(uint8_t byteData)//串口发送信息,通过查询方式发送一个字符
@@ -173,8 +169,8 @@ void USART1_IRQHandler(void)                	//串口1中断服务程序
 
 	if((FingerPrintDataReadFlag == 1) && (USART_GetITStatus(USART1, USART_IT_RXNE) != RESET))  //接收中断(接收到的数据必须是0x0d 0x0a结尾)
 	{
-		receiveByte = USART_ReceiveData(USART1);//(USART1->DR);		//读取接收到的数据			
-		analyzeFingerModelPacket(receiveByte);//解析接受的数据
+		receiveByte = USART_ReceiveData(USART1);//(USART1->DR);		//读取接收到的数据	
+        Uint8FIFOPush(Uint8Uart2FIFOQueueHand,receiveByte);
 	}
 } 
 
@@ -186,7 +182,7 @@ void USART2_IRQHandler(void)                	//串口中断服务程序
 	if(USART_GetITStatus(USART2, USART_IT_RXNE) != RESET)  //接收中断(接收到的数据必须是0x0d 0x0a结尾)
 	{
 		receiveByte = USART_ReceiveData(USART2);//(USART1->DR);		//读取接收到的数据
-        Uint8FIFOPush(Uint8FIFOQueueHand,receiveByte);
+        Uint8FIFOPush(Uint8Uart2FIFOQueueHand,receiveByte);
 	}
 } 
 
